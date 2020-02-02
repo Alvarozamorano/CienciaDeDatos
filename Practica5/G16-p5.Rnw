@@ -1,0 +1,360 @@
+\documentclass [a4paper] {article}
+
+\usepackage[spanish]{babel} 
+\usepackage[utf8]{inputenc} 
+\usepackage{multirow} 
+\usepackage{float} 
+
+\title{R-PL5}
+\author{Gabriel López Cuenca, Sergio Sanz Sacristán, Álvaro Zamorano Ortega}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+\maketitle
+
+\graphicspath{ {./tmp/} }
+
+\section{Ejercicio realizado en clase.}
+
+\subsection{K-vecinos.}
+\bigskip
+A partir del siguiente conjunto de calificaciones académicas,formados por dos notas: teoría y laboratorio, 
+que tendrán valores entre 0 y 5, realizar un análisis de detección de datos anómalos utilizando el algoritmo
+\textbf{K-vecinos}.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Alumno & Teoría & Laboratorio\\
+\hline \hline
+A1 & 4 & 4 \\ \hline
+A2 & 4 & 3 \\ \hline
+A3 & 5 & 5 \\ \hline
+A4 & 1 & 1 \\ \hline
+A5 & 5 & 4 \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+En primer lugar se introducirán los datos en forma de matriz y se hará la traspuesta de esta.
+<<eval=TRUE>>=
+muestra = matrix(c(4,4,4,3,5,5,1,1,5,4),2,5)
+muestra = t(muestra)
+@
+
+\bigskip
+En segundo lugar, calculamos las distancias euclídeas entre todos los puntos y los almacenamos 
+en una matriz. El cálculo de las distancias lo realizamos mediante la función \textbf{as.matrix}. 
+
+\bigskip
+<<eval=TRUE>>=
+distancias = as.matrix(dist(muestra))
+distancias = matrix(distancias,5,5)
+@
+
+\bigskip
+En tercer lugar, ordenamos las columnas de la matriz de distancias por los valores de cada una de
+las filas de menor a mayor. Se tiene en cuenta el \textbf{tercer} vecino, por lo que debemos estudiar la cuarta 
+fila de la matriz ya que se tiene en cuenta la distancia de un punto consigo mismo. Se obtienen las 
+muestras cuyo suceso es anómalo o outlier, el grado de outlier es \texttt{2.5.}
+<<eval=TRUE>>=
+source("./Funciones/anomalosKVecinos.R")
+anomalosKVecinos
+@
+
+\bigskip
+Procedemos a su ejecución:
+<<eval=TRUE>>=
+(anomalosKVecinos(distancias,muestra,3,2.5,2))
+@
+
+\bigskip
+Es importante indicar que la función necesita conocer el número de \textbf{dimensiones} que tiene
+la muestra.
+
+\subsection{Caja y bigotes.}
+\bigskip
+A partir del siguiente conjunto de valores de resistencia y densidad para diferentes tipos de hormigón,
+se hará un análisis para la detección de outliers utilizando medidas de ordenación sobre la resistencia
+con el método de \textbf{Caja y Bigotes}.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Hormigón & Resistencia & Densidad\\
+\hline \hline
+H1 & 3 & 2 \\ \hline
+H2 & 3.5 & 12 \\ \hline
+H3 & 4.7 & 4.1 \\ \hline
+H4 & 5.2 & 4.9 \\ \hline
+H5 & 7.1 & 6.1 \\ \hline
+H6 & 6.2 & 5.2 \\ \hline
+H7 & 14 & 5.3 \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\bigskip
+En primer lugar, introducimos los datos en una matriz y lo convertimos a dataframe para que el trabajo con las 
+columnas sea más cómodo.
+<<eval=TRUE>>=
+muestra = t(matrix(c(3,2,3.5,12,4.7,4.1,5.2,4.9,7.1,6.1,6.2,5.2,14,5.3),
+        2,7,dimnames = list(c("r","d"))))
+muestra = data.frame(muestra)
+@
+
+\bigskip
+En segundo lugar:
+\begin{enumerate}
+\item Se determina el grado de outlier de forma arbitraria. El valor dado es \texttt{1.5}.
+\item Se ordenan los datos y se obtienen los cuartiles.
+<<eval=TRUE>>=
+(cuar1 <- quantile(muestra$r,0.25))
+(cuar3 <- quantile(muestra$r,0.75))
+@
+
+\item Se calculan los límites del intervalo.
+<<eval=TRUE>>=
+(int = c(cuar1 - 1.5 * (cuar3 - cuar1),cuar3 + 1.5*(cuar3-cuar1)))
+@
+
+\item Se identifican como outliers los valores que quedan fuera del intervalo. Para ello 
+hemos creado una función:
+<<eval=TRUE>>=
+source("./Funciones/sucesosAnomalos.R")
+sucesosAnomalos
+@
+
+\bigskip
+Procedemos a su ejecución:
+<<eval=TRUE>>=
+(sucesosAnomalos(muestra$r,int))
+@
+
+\end{enumerate}
+
+\bigskip
+Por último, mostramos el diagrama de caja y bigotes donde se identifica el valor anómalo.
+<<eval=TRUE,results = hide>>=
+source("./Funciones/Bigotes.R")
+bigotes(muestra$r,"bigotes.png",1.5)
+@
+
+\includegraphics[width=\textwidth]{bigotes}
+
+\subsection{Desviación Típica.}
+\bigskip
+Ahora con los mismos datos del apartado anterior deseamos realizar un análisis de detección de datos 
+anómalos utilizando medidas de dispersión sobre la densidad con el método de \textbf{Desviación Típica}.
+\begin{enumerate}
+\item Se determina el grado de outlier de forma arbitraria. El valor dado es \texttt{2}.
+\item Se obtiene la media aritmética.
+<<eval=TRUE>>=
+(media<-mean(muestra$d))
+@
+
+\item Se obtiene la desviación típica.
+<<eval=TRUE>>=
+sdd<-sd(muestra$d)
+(desviacion<-sqrt((sdd^2)*((length(muestra$d)-1)/length(muestra$d))))
+@
+
+\item Y por último, se calculan los límites del intervalo para los valores atípicos.
+<<eval=TRUE>>=
+(intdes<-c(media-2*desviacion,media+2*desviacion))
+@
+
+\item Se identifican como outliers los valores que quedan fuera del intervalo. Para ello
+hemos creado una función:
+<<eval=TRUE>>=
+source("./Funciones/sucesosAnomalos.R")
+sucesosAnomalos
+@
+
+\bigskip
+Procedemos a su ejecución:
+<<eval=TRUE>>=
+(sucesosAnomalos(muestra$d,intdes))
+@
+
+\end{enumerate}
+
+\subsection{Regresión.}
+\bigskip
+Con los mismos datos de los apartados anteriores deseamos realizar un análisis de detección de datos 
+anómalos sobre la regresión de las variables, densidad en función de la resistencia, utilizando el
+error estándar de los residuos con el método de \textbf{Regresión}.
+\begin{enumerate}
+\item Se determina el grado de outlier de forma arbitraria. El valor dado es \texttt{2}.
+\item Se obtiene la regresión lineal.
+<<eval=TRUE>>=
+(dfr<-lm(muestra$d~muestra$r))
+@
+
+\item Se obtiene el Error Estándar de los residuos.
+<<eval=TRUE>>=
+res<-summary(dfr)$residuals
+(sr=sqrt(sum(res^2)/7))
+@
+
+\item Se calcula el límite para considerar atípico un valor siguiendo la ecuación 
+\texttt{Grado outlier * Error estándar}.
+<<eval=TRUE>>=
+(intSr<-(2*sr))
+@
+
+\item Se identifican los outliers como aquellos tales que \texttt{|yObservada - yCalculada| > limite}.
+El valor de |yObservada - yCalculada| es cada uno de los residuos.
+<<eval=TRUE>>=
+source("./Funciones/anomalosRegresion.R")
+anomalosRegresion
+@
+
+\bigskip
+Procedemos a su ejecución:
+<<eval=TRUE>>=
+(anomalosRegresion(res, intSr, muestra))
+@
+
+\end{enumerate}
+
+\bigskip
+\section{Desarrollo de métodos.}
+
+\bigskip
+Como en el apartado anterior hemos desarrollado el método de K-vecinos, ahora hemos buscado
+otros paquetes capaces de encontrar los outliers de una muestra realizando éste mismo método.
+
+\subsection{Paquete <adamethods>.}
+\bigskip
+En primer lugar hemos encontrado el paquete \textbf{adamethods}, el cual necesita previamente
+\textbf{shapes}.
+<<eval=TRUE, results=hide>>=
+install.packages("shapes")
+library(shapes)
+install.packages("adamethods")
+library(adamethods)
+@
+
+\bigskip
+Vamos a utilizar la función \textbf{do\_knno()} que forma parte del paquete adamethods, la cual
+nos devuelve los números de las muestras que son outliers. Para ello primero vamos a introducir
+la muestra con la que vamos a trabajar, la cual es la utilizada en el apartado 1.1.
+<<eval=TRUE>>=
+muestra = matrix(c(4,4,4,3,5,5,1,1,5,4),2,5)
+muestra = t(muestra)
+data = as.matrix(muestra)
+@
+
+\bigskip
+Para usar la función debemos introducir la muestra, el número de vecino con el que queremos trabajar
+(en este caso 3) y el número de outliers que queremos obtener. El puntaje de anomalía de cada punto
+es la distancia a su k-ésimo vecino (3 en este caso) más cercano en el conjunto de datos. Luego, todos
+los puntos se clasifican en función de esta distancia. Cuanto más alto es el puntaje de un ejemplo,
+más anómalo es. Por esta característica consideramos que el funcionamiento del paquete no es adecuado 
+ya que se recomienda indicar el grado de outlier, y con ello el rango de valores permitidos.
+
+\bigskip
+Además aunque al calcular el número de outliers de la forma indicada en el apartado 1.1 nos salgan 2,
+si al realizar está función le introducimos que solo nos calcule 1 outlier, solo nos devolverá 1.
+Por lo tanto, la función no se corresponde con la realidad.
+
+\bigskip
+Procedemos a llamar a la función.
+<<eval=TRUE>>=
+out <- do_knno(data,3,1)
+(data[out,])
+@
+
+\subsection{Paquete <outliers>.}
+\bigskip
+Ahora hemos estudiado el paquete \textbf{outliers}, el cual nos devuelve un outlier de la muestra.
+<<eval=TRUE>>=
+install.packages("outliers")
+library(outliers)
+@
+
+\bigskip
+Una vez que inicializamos el paquete a utilizar introducimos la muestra de datos, la cual corresponde
+con la utilizada en el apartado anterior y en el apartado 1.1 para comparar los resultados.
+<<eval=TRUE>>=
+muestra = matrix(c(4,4,4,3,5,5,1,1,5,4),2,5)
+muestra = t(muestra)
+data = as.matrix(muestra)
+@
+
+\bigskip
+Una vez introducidos los datos de la muestra procedemos a encontrar los outliers utilizando la función
+del paquete \textbf{outlier()}. A esta función hay que pasarle como parámetro la muestra de datos introducida,
+y esta nos devolverá un outlier ya que encuentra el valor con la mayor diferencia entre él y la media
+muestral. Si por ejemplo en el apartado 1.1 la función K-vecinos nos devuelve más de un outlier, 
+esta función tan solo nos va a devolver uno de esos outliers. Incluso si no detecta ningúna outlier nuestra
+función, aqui nos dará uno de los datos de la muestra como outlier. Por esto consideramos que la 
+funcionalidad de este paquete no es óptima.
+
+\bigskip
+Procedemos a llamar a la función.
+<<eval=TRUE>>=
+outlier(data)
+@
+
+\subsection{Paquete <referenceIntervals>.}
+\bigskip
+Ahora estudiaremos el paquete \textbf{referenceIntervals}, entonces primero inicializamos este paquete.
+<<eval=TRUE>>=
+install.packages("referenceIntervals")
+library(referenceIntervals)
+@
+
+\bigskip
+Posteriormente introducimos la muestra de datos, la cual corresponde con la utilizada en los apartados
+anteriores y en el 1.1 para comparar resultado.
+<<eval=TRUE>>=
+muestra = matrix(c(4,4,4,3,5,5,1,1,5,4),2,5)
+muestra = t(muestra)
+data = as.matrix(muestra)
+@
+
+\bigskip
+Ahora buscaremos los outliers de la muestra con la función \textbf{cook.outliers()}. Esta función calcula
+un modelo de regresión lineal para los datos (que es la media de los datos unidimensionales). A partir de eso,
+utilizando las distancias de Cook de cada punto de datos, se determinan los valores atípicos y se
+devuelven.La distancia de Cook es una medida calculada con respecto a un modelo de regresiónn dado y, por lo tanto, 
+solo se ve afectada por las variables X incluidas en el modelo. Por tanto, calcula la infuencia ejercida por cada 
+uno de los datos en el resultado predicho.
+
+\bigskip
+Por lo tanto, procedemos a llamar a la función con los datos correspondientes a las calificaciones de teoría.
+<<eval=TRUE>>=
+cook.outliers(data[,1])
+@
+
+\subsection{Paquete <DMwR>.}
+\bigskip
+\textbf{Local Outlier Factor} es un algoritmo que obtiene los factores locales atípicos. La función lofactor del 
+paquete DMwR implementa este algoritmo comparando la densidad local de cada punto con sus vecinos.
+
+\bigskip
+De este modo, calculamos los factores locales atípicos con 3 vecinos para la muestra de los diferentes 
+tipos de hormigón: 
+<<eval=TRUE>>=
+install.packages("DMwR")
+library(DMwR)
+muestra = t(matrix(c(3,2,3.5,12,4.7,4.1,5.2,4.9,7.1,6.1,6.2,5.2,14,5.3),
+        2,7,dimnames = list(c("r","d"))))
+muestra = data.frame(muestra)
+outlier.scores <- lofactor(muestra, k=3)
+outlier.scores
+@
+
+\bigskip
+Como se puede observar, se obtiene un índice de densidad para cada instancia. Por tanto, si escogemos arbitrariamente
+como grado de outlier el 3, obtenemos que el suceso 7 es un outlier:
+<<eval=TRUE>>=
+anomalosRegresion(outlier.scores,3,muestra)
+@
+
+\end{document}

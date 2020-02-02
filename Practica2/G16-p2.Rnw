@@ -1,0 +1,369 @@
+\documentclass [a4paper] {article}
+
+\usepackage[spanish]{babel} 
+\usepackage[utf8]{inputenc} 
+\usepackage{multirow} 
+\usepackage{float} 
+
+\title{R-PL2}
+\author{Gabriel López, Sergio Sanz, Álvaro Zamorano}
+
+\begin{document}
+
+\maketitle
+
+\graphicspath{ {./tmp/} }
+
+\section{Ejercicio realizado en clase.}
+Para poder usar el algoritmo \textbf{Apriori} y sus reglas de asociación vamos a utilizar el paquete
+\texttt{arules}. Este paquete hay que descargarlo desde la página de CRAN y para instalarlo hay que
+ejecutar el siguiente código:
+
+<<eval=TRUE>>=
+install.packages("./arules_1.6-4.zip",repos=NULL)
+@
+
+\bigskip
+De esta forma, el paquete únicamente está instalado. Para poder usarlo es necesario cargarlo:
+<<eval=TRUE>>=
+library(arules)
+@
+
+Los datos a usar en este primer ejercicio se componen de 6 cestas de la compra, en concreto
+estas son: \{Pan, Agua, Leche, Naranjas\},\{{Pan, Agua, Café, Leche\}, \{Pan, Agua, Leche\}, 
+\{Pan, Café, Leche\}, \{Pan, Agua\}, \{Leche\}.
+
+\bigskip
+Para introducir estos datos en el algoritmo a usar es necesario crear una matriz con el siguiente
+aspecto.
+\begin{table}[H]
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+Suceso & Pan & Agua & Café & Leche & Naranjas \\
+\hline \hline
+s1 & 1 & 1 & 0 & 1 & 1 \\ \hline
+s2 & 1 & 1 & 1 & 1 & 0 \\ \hline
+s3 & 1 & 1 & 0 & 1 & 0 \\ \hline
+s4 & 1 & 0 & 1 & 1 & 0 \\ \hline
+s5 & 1 & 1 & 0 & 0 & 0 \\ \hline
+s6 & 0 & 0 & 0 & 1 & 0 \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\bigskip
+Esta matriz se introduce en R mediante:
+<<eval=TRUE>>=
+muestra<-Matrix(c(1,1,0,1,1,1,1,1,1,0,1,1,0,1,0,1,0,1,1,0,1,1,0,0,0,0,0,0,1,0),
+6,5,byrow=T,dimnames=list(c("suceso1","suceso2","suceso3","suceso4","suceso5",
+"suceso6"),c("Pan","Agua","Cafe","Leche","Naranjas")),sparse=T)
+@
+
+\bigskip
+Se necesita convertir la matriz a una matriz dispersa a través de la función \textbf{as} la cuál convierte un objeto a una determinada
+clase, en este caso la clase es \textit{nsparseMatrix}. Esta clase lo que hace es cambiar los valores mayores de 0 por un valor binario, 
+con el fin de gastar la menor cantidad de memoria posible ya que solo se almacenan aquellas posiciones no vacias, es decir, las que cuyo
+valor es distinto de 0.
+<<eval=TRUE>>=
+muestrangCMatrix<-as(muestra,"nsparseMatrix")
+@
+
+\bigskip
+El siguiente paso a realizar es calcular la \textbf{traspuesta} de la última matriz generada.
+<<eval=TRUE>>=
+transpuestangCMatrix<-t(muestrangCMatrix)
+@
+
+\bigskip
+Antes de aplicar el algoritmo, calculamos y mostramos todas las \textbf{transacciones}, es decir, todas las asociaciones
+que hay en nuestros datos.
+<<eval=TRUE>>=
+transacciones<-as(transpuestangCMatrix,"transactions")
+summary(transacciones)
+@
+
+\bigskip
+Por último, aplicamos el algoritmo \textbf{Apriori} para las asociaciones cuyo soporte sea igual o superior al 50\% y cuya confianza
+sea igual o mayor que el 80\%.
+<<eval=TRUE,results=hide>>=
+asociaciones<-apriori(transacciones,parameter=list(support=0.5,confidence=0.8))
+@
+<<eval=TRUE>>=
+inspect(asociaciones)
+@
+
+\bigskip
+Se puede observar, a través de las transacciones las siguientes conclusiones:
+\begin{enumerate}
+\item Las personas que compran agua, compran también pan, y viceversa.
+\item Las personas que compran leche, compran pan, y viceversa.
+\item Las que compran agua y leche juntos también compran pan.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bigskip
+\section{Parte 2.}
+\subsection{Datos de ventas de coches.}
+Para el leer el fichero \texttt{.txt} hemos creado una función la cuál nos devuelve una lista con las filas
+de la matriz.
+<<eval=TRUE>>=
+source("leerMatriz.R")
+leerM
+@
+
+Procedemos a la lectura de dicho fichero.
+<<eval=TRUE>>=
+m<-leerM("2_1.txt")
+@
+
+\bigskip
+La matriz leida tiene el siguiente aspecto.
+\begin{table}[H]
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+Suceso & Xenon & Alarma & Techo & Navegador & Bluetooth & ControlV \\
+\hline \hline
+s1 & 1 & 0 & 0 & 1 & 1 & 1 \\ \hline
+s2 & 1 & 0 & 1 & 0 & 1 & 1 \\ \hline
+s3 & 1 & 0 & 0 & 1 & 0 & 1 \\ \hline
+s4 & 1 & 0 & 1 & 1 & 1 & 0 \\ \hline
+s5 & 1 & 0 & 0 & 0 & 1 & 1 \\ \hline
+s6 & 0 & 0 & 0 & 1 & 0 & 0 \\ \hline
+s7 & 1 & 0 & 0 & 0 & 1 & 1 \\ \hline
+s8 & 0 & 1 & 1 & 0 & 0 & 0 \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\bigskip
+Esta matriz se introduce en R mediante:
+<<eval=TRUE>>=
+mCoches<-Matrix(m,8,6,byrow=T,dimnames=list(c("suceso1","suceso2","suceso3",
+"suceso4","suceso5","suceso6", "suceso7", "suceso8"),
+c("Xenon", "Alarma", "Techo", "Navegador", "Bluetooth", "ControlV")),sparse=T)
+@
+
+\bigskip
+Se necesita convertir la matriz a una matriz dispersa a través de la función \textbf{as}.
+<<eval=TRUE>>=
+mCochesngC<-as(mCoches,"nsparseMatrix")
+@
+
+\bigskip
+El siguiente paso a realizar es calcular la \textbf{traspuesta} de la última matriz generada.
+<<eval=TRUE>>=
+transpuestangC<-t(mCochesngC)
+@
+
+\bigskip
+Antes de aplicar el algoritmo, calculamos y mostramos todas las \textbf{transacciones}, es decir, todas las asociaciones
+que hay en nuestros datos.
+<<eval=TRUE>>=
+transac<-as(transpuestangC,"transactions")
+summary(transac)
+@
+
+\bigskip
+Por último, aplicamos el algoritmo \textbf{Apriori} para las asociaciones cuyo soporte sea igual o superior al 40\% y cuya confianza
+sea igual o mayor que el 90\%.
+<<eval=TRUE,results=hide>>=
+asoc<-apriori(transac,parameter=list(support=0.4,confidence=0.9))
+@
+<<eval=TRUE>>=
+inspect(asoc)
+@
+
+\bigskip
+Igual que en el caso anterior, a través de las transacciones obtenidas se pueden obtener las siguientes conclusiones: los 
+coches que incorporan tanto control de velocidad y/o bluetooth, tienen luces de Xenon.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bigskip
+\subsection{Desarrollo del grupo.}
+Para el desarrolo de esta parte hemos buscado unos datos en \textit{Kaggle} correspondientes a carros de la compra aleatorios.
+
+En primer lugar procedemos a leer los datos que hay en el fichero \texttt{.csv} almacenándolos directamente
+en un objeto de tipo \textbf{transactions} ya que es la estructura de almacenamiento empleada por \textit{arules.}
+Para poder leer estos datos es necesario tener cargada la librería mediante \texttt{library(arules)}, como se ha
+indicado anteriormente.
+
+Las transacciones se leen gracias al uso de la función \textbf{read.transactions}.
+<<eval=TRUE>>=
+shopT<-read.transactions("shop.csv", format = "basket", 
+                  header = FALSE, sep = ",", 
+                  cols = NULL, rm.duplicates = FALSE, 
+                  skip = 0)
+@
+
+\bigskip
+Una vez leídas las transacciones, mostramos un ejemplo de ellas:
+<<eval=TRUE>>=
+inspect(shopT[1])
+@
+
+\bigskip
+Observamos en un gráfico el \textbf{soporte} de los 10 productos más comprados, es decir, en cuantos
+sucesos aparece cada uno de los productos respecto al total de sucesos.
+<<eval=TRUE>>=
+source("sopImg.R")
+d<-sopImg(shopT,10,"sopI.png")
+@
+\includegraphics[width=\textwidth]{sopI}
+
+Para usar la función anterior es necesario installar e importar mediante \texttt{library} un paquete de R
+que nos ofrece el uso de la paleta de colores empleada en el gráfico. Dicha función tiene el siguiente
+aspecto:
+<<eval=TRUE>>=
+sopImg
+@
+
+\bigskip
+Estudiando la documentación perteneciente a la librería arules, hemos encontrado una función con la que extraer
+conjuntos de elementos frecuentes de acuerdo a un soporte dado. Está función es \textbf{eclat.}
+Respecto al algoritmo Apriori se puede decir que reduce el tiempo de cómputo a causa de sacrificar memoria; su
+forma de actuar es almacenar para cada item en qué transacciones aparece (de forma vertical), por tanto, 
+se diferencian en la manera de escanear y analizar los datos.
+
+\bigskip
+Procedemos a su ejecución:
+<<eval=TRUE,results=hide>>=
+is<-eclat(shopT,parameter=list(support=0.3))
+@
+
+\bigskip
+La función comentada anteriormente nos proporciona un objeto de la clase \texttt{itemsets}, y gracias a la función
+\textbf{ruleInduction} podemos obtener las asociaciones que contienen nuestros datos. RuleInduction induce todas las reglas 
+que puede generar el conjunto de conjuntos de elementos (itemsets) a partir de un conjunto transacciones.
+<<eval=TRUE>>=
+rules<-ruleInduction(is,shopT,confidence=0.7)
+inspect(rules)
+@
+
+\bigskip
+Una vez obtenidas las asociaciones que contienen nuestros datos, vamos a mostrarlas de forma gráfica para que las conclusiones
+se puedan obtener de una forma más sencilla y visual.
+
+\bigskip
+En primer lugar, para poder usar los gráficos instalaremos el paquete \textit{arulesViz}, como se ha explicado en numerosas
+ocasiones.
+<<eval=TRUE, results=hide>>=
+install.packages("arulesViz")
+library(arulesViz)
+@
+
+\bigskip
+En el siguiente gráfico se muestran las asociaciones entre los productos de nuestra muestra de datos. El tamaño de los nodos
+refleja el soporte de cada uno de los productos y el color de los mismos, la relación de elevación (lift). Dicho lift representa 
+la relación entre la confianza y la confianza esperada, es decir, un lift mayor que 1.0 implica que la relación entre el antecedente 
+y el consecuente es más significativa de lo que se esperaría si los dos conjuntos fueran independientes, por tanto, cuanto mayor
+sea la relación de elevación, más significativa será la asociación estudiada.
+<<eval=TRUE, results=hide>>=
+source("graph.R")
+graph(rules,"graphR.png")
+@
+\includegraphics[width=\textwidth]{graphR}
+
+\bigskip
+La función usada para generar el gráfico anterior tiene la siguiente forma:
+<<eval=TRUE>>=
+graph
+@
+
+\bigskip
+Se puede observar lo siguiente: 
+\begin{enumerate}
+\item Pouldry es el producto con mayor soporte, seguido por eggs y aluminum foil.
+\item Laundry detergent es el producto con mayor relación de elevación (lift), seguido por yogurt y eggs.
+\item Todas los productos están asociados entorno a vegetables. Esto se debe en gran medida al soporte de vegetables
+en el total de transacciones.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bigskip
+A la vista de los resultados obtenidos con estos datos donde hay que usar un bajo soporte para obtener un
+número de asociaciones considerable, procedemos a hacer el análisis de un conjunto de datos contenido en arules. Considerando que el
+soporte establece la probabilidad de aparición de los elementos de un conjunto, un soporte de 30\% resulta muy bajo.
+El dataset a usar es \textit{Adult}
+
+\bigskip
+En primer lugar debemos cargar estos datos.
+<<eval=TRUE>>=
+data("Adult")
+@
+
+\bigskip
+Estos datos tienen las siguientes columnas:
+\begin{itemize}
+\item Age
+\item Workclass
+\item Education
+\item Education-num
+\item Marital-status
+\item Occupation
+\item Relationship
+\item Race
+\item Sex
+\item Capital-gain
+\item Capital-loss
+\item Fnlwgt
+\item Hours-per-week
+\item Native country
+\item Income
+\end{itemize}
+
+\bigskip
+Procedemos a realizar el análisis mediante el uso de eclat.
+<<eval=TRUE,results=hide>>=
+isA<-eclat(Adult,parameter=list(support=0.5))
+rulesA<-ruleInduction(isA,Adult,confidence=0.9)
+@
+
+\scriptsize
+<<eval=TRUE>>=
+inspect(rulesA)
+@
+
+\normalsize
+\bigskip
+Al igual que anteriormente, mostramos de forma gráfica las asociaciones obtenidas.
+<<eval=TRUE, results=hide>>=
+graph(rulesA,"graphRA.png")
+@
+\includegraphics[width=\textwidth]{graphRA}
+
+\bigskip
+Para no tener en cuenta en las asociaciones los sucesos con capital-gain y capital-loss a None, 
+mediante el uso de la función Apriori hemos eliminado dichos sucesos haciendo un filtro a través
+del parámetro \texttt{appearance.}
+<<eval=TRUE, results=hide>>=
+apr<-apriori(Adult,parameter=list(support=0.5,confidence=0.9),
+    appearance=list(none=c("capital-gain=None","capital-loss=None")))
+@
+
+\bigskip
+Procedemos a mostrar las asociaciones obtenidas, tanto según lo representa la función \textit{inspect}, como 
+de manera gráfica, haciendo uso de la función definida anteriormente.
+\footnotesize
+<<eval=TRUE>>=
+inspect(apr)
+@
+
+\normalsize
+<<eval=TRUE, results=hide>>=
+graph(apr,"graphRP.png")
+@
+\includegraphics[width=\textwidth]{graphRP}
+
+\bigskip
+A partir de lo obtenido se puede concluir que:
+\begin{enumerate}
+\item Todas las personas de raza blanca y/o sexo masculino son de EEUU, y viceversa.
+\item Las personas que trabajan en el sector privado y son de raza blanca, son de EEUU.
+\end{enumerate}
+
+\end{document}

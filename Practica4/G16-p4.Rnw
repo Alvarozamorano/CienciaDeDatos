@@ -1,0 +1,258 @@
+\documentclass [a4paper] {article}
+
+\usepackage[spanish]{babel} 
+\usepackage[utf8]{inputenc} 
+\usepackage{multirow} 
+\usepackage{float} 
+
+\title{R-PL4}
+\author{Gabriel López, Sergio Sanz, Álvaro Zamorano}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+\maketitle
+
+\graphicspath{ {./tmp/} }
+
+\section{Ejercicio realizado en clase.}
+
+\bigskip
+A partir del siguiente conjunto de calificaciones académicas, pertenecientes a dos grupos de alumnos (mañana y tarde),
+formados por dos notas: teoría y laboratorio, las notas de teoría y laboratorio tendrán valores entre 0 y 5, realizar
+un análisis de clasificación no supervisada utilizando el algoritmo \textbf{K-Means}.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Alumno & Teoría & Laboratorio\\
+\hline \hline
+A1 & 4 & 4 \\ \hline
+A2 & 3 & 5 \\ \hline
+A3 & 1 & 2 \\ \hline
+A4 & 5 & 5 \\ \hline
+A5 & 0 & 1 \\ \hline
+A6 & 2 & 2 \\ \hline
+A7 & 4 & 4 \\ \hline
+A8 & 2 & 1 \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+En primer lugar se introducirán los datos en forma de matriz y se hará la traspuesta de esta.
+<<eval=TRUE>>=
+m<-matrix(c(4,4,3,5,1,2,5,5,0,1,2,2,4,5,2,1),2,8)
+(m<-t(m))
+@
+
+\bigskip
+En segundo lugar se deben seleccionar el número de clusters en los que se van a agrupar los datos,
+en este caso serán 2. Además es necesario indicar los centroides iniciales de cada uno de ellos, en
+este caso son C1\{0,1\} y C2\{2,2\}. Todo ello es elegido de forma arbitraria.
+
+\bigskip
+Introducimos los centroides en una matriz y se realiza la traspuesta.
+<<eval=TRUE>>=
+c<-matrix(c(0,1,2,2),2,2)
+(c<-t(c))
+@
+
+\bigskip
+La función \texttt{K-Means} se encuentra en el paquete \textbf{stats}. Dicho paquete se carga por defecto al
+arrancar R; para comprobarlo se hace uso de la función \texttt{search()}.
+<<eval=TRUE>>=
+search()
+@
+
+\bigskip
+Por último hacemos uso de la función y obtenemos los centroides finales. Indicamos que el número máximo de
+iteraciones es 4.
+<<eval=TRUE>>=
+(clasificacionns<-kmeans(m,c,4))
+@
+
+\bigskip
+Los resultados obtenidos son los mismos que los de clase, es decir, \textbf{C1\{1.25,1.5\} y C2\{4,4.75\}.}
+
+\bigskip
+A continuación usaremos los clusters obtenidos para separar los datos de la muestra en dos grupos. Para ello
+se hace uso de la función \texttt{cbind} la cuál añade (por delante) una columna a la matriz de datos. Dicha
+columna se corresponde con la clasificación obtenida, será 1 ó 2 dependiendo del cluster al que pertenezca
+cada muestra.
+<<eval=TRUE>>=
+(m = cbind(clasificacionns$cluster,m)) 
+@
+
+\bigskip
+Una vez se tiene el cluster al que pertenece cada muestra, se separa la matriz siguiendo el criterio anterior.
+<<eval=TRUE>>=
+mc1=subset(m,m[,1]==1)
+mc2=subset(m,m[,1]==2)
+@
+
+\bigskip
+Por último, limpiamos la columna introducida para el fin buscado y mostramos los dos conjuntos de datos
+clusterizados.
+<<eval=TRUE>>=
+(mc1=mc1[,-1])
+(mc2=mc2[,-1])
+@
+
+\bigskip
+Se puede observar que las muestras 3,5,6,8 pertenecen al mismo grupo, mientras que las muestras 1,2,4,7 
+se encuentran en el restante.
+
+\section{Desarrollo por parte del alumno.}
+
+\bigskip
+En primer lugar hemos realizado un conjunto de funciones que realizan el algoritmo \textbf{K-Means}. Los parámetros
+de esta función deben ser la matriz de muestras y la matriz con los centroides iniciales, al igual que se indica 
+anteriormente. Como resultado, proporciona las coordenadas finales del centroide de cada uno de los clusters y varias
+listas (número de clusters) incluyendo en cada una de ellas las muestras que pertenece a cada uno de los clusters.
+Además, esta función, en caso de que los datos tengan 2 dimensiones, nos generará un gráfico donde se muestra la 
+evolución del algoritmo a la largo de las diferentes iteraciones realizadas. 
+
+Cabe destacar que el uso de la función se hace mediante matrices.
+
+\bigskip
+Procedemos a cargar dichas funciones.
+<<eval=TRUE>>=
+source("./Funciones/KMeans.R")
+@
+
+\bigskip
+Las principales funciones codificadas son:
+<<eval=TRUE>>=
+calcularMatrizDistancias
+calcularMatrizPertenencia
+muestrasPorCluster
+obtenerMuestrasSeparadas
+obtenerNuevosCentroides
+comprobarMatrizPertenencia
+@
+
+\bigskip
+Todas ellas se encuentran dentro de un bucle while realizado siempre y cuando cambie la matriz de pertenencia.
+
+\bigskip
+Respecto a la parte de \textbf{representación} se ha realizado otro conjunto de funciones con dicho fin. La
+principal de ellas es:
+<<eval=TRUE>>=
+representar
+@
+
+\bigskip
+Cabe indicar que únicamente se dispone de 5 colores diferentes, es decir, en caso de haber más de 5 clusters,
+los colores de la gráfica volverían a repetirse.
+
+\bigskip
+Probamos nuestras funciones con los datos del apartado anterior y obtenemos la evolución del algoritmo.
+<<eval=TRUE>>=
+m<-t(matrix(c(4,4,3,5,1,2,5,5,0,1,2,2,4,5,2,1),2,8))
+c<-t(matrix(c(0,1,2,2),2,2))
+(resultado<-KMeans(m,c,"resultadoKMeans.png"))
+@
+\includegraphics[width=\textwidth]{resultadoKMeans}
+
+\bigskip
+Se observa que los resultados obtenidos son los mismos que los conseguidos en clase.
+
+\bigskip
+Con el uso de estas funciones se realizará una clasterización no jerárquica de datos obtenidos de \texttt{Kaggle}
+sobre información de diferentes países. Procedemos a leer dichos datos.
+
+\bigskip
+<<eval=TRUE>>=
+library("readr")
+datos<-read.csv("./Datos/countries.csv")
+@
+
+\bigskip
+Se usarán los datos porcentuales pertenecientes a los sectores de agricultura, industria y servicios para realizar
+k-Means.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+País & Id & Sector Primario & Sector Secundario & Sector Terciario\\
+\hline \hline
+Argentina & 1 & 0.095 & 0.358 & 0.547\\ \hline
+España & 2 & 0.040 & 0.295 & 0.665\\ \hline
+Portugal & 3 & 0.053 & 0.274 & 0.673\\ \hline
+Reino Unido & 4 & 0.005 & 0.237 & 0.758\\ \hline
+Estados Unidos & 5 & 0.010 & 0.204 & 0.787\\ \hline
+Rusia & 6 & 0.054 & 0.371 & 0.575\\ \hline
+Alemania & 7 & 0.009 & 0.296 & 0.695\\ \hline
+Francia & 8 & 0.022 & 0.214 & 0.764\\ \hline
+Brasil & 9 & 0.084 & 0.400 & 0.516\\ \hline
+Italia & 10 & 0.021 & 0.291 & 0.688\\ \hline
+China & 11 & 0.125 & 0.473 & 0.403\\ \hline
+Chile & 12 & 0.060 & 0.493 & 0.447\\ \hline
+Turquía & 13 & 0.117 & 0.298 & 0.585\\ \hline
+Mexico & 14 & 0.038 & 0.259 & 0.702\\ \hline
+Canadá & 15 & 0.022 & 0.294 & 0.684\\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Procedemos con la ejecución.
+<<eval=TRUE>>=
+datosEvaluar<-c(datos$Agriculture,datos$Industry,datos$Service)
+datosEvaluar<-matrix(datosEvaluar,15,3)
+cIniciales<-matrix(c(0.04,0.08,0.25,0.35,0.60,0.65),2,3)
+(resultado2<-KMeans(datosEvaluar,cIniciales,"resultadoKMeans.png"))
+@
+
+\bigskip
+A la vista de los \textbf{resultados} obtenidos, los países se clusterizan de la siguiente manera:
+\begin{enumerate}
+\item España, Portugal, Reino Unido, Estados Unidos, Alemania, Francia, Italia, Mexico, Canada
+\item Argentina, Rusia, Brasil, China, Chile, Turquía
+\end{enumerate}
+
+Una de las diferencias de los países del primer cluster respecto a los restantes es el mayor 
+porcentaje en el sector servicios y menor en el sector primario.
+
+\bigskip
+En caso de que los centroides escogidos no sean correctos, es decir, que durante la ejecución del algoritmo uno de los clusters no contenga
+datos, se lanzará un mensaje de error y se parará la ejecución. Este comportamiento se realiza en la siguiente función.
+<<eval=TRUE>>=
+obtenerMuestrasSeparadas
+@
+
+\bigskip
+Con estos mismos datos realizaremos una clusterización \textbf{jerárquica} mediante el uso de los
+paquetes \texttt{stats} y \texttt{factorextra}. Procedemos a cargar el segundo de ellos.
+<<eval=TRUE,results=hide>>=
+install.packages("factoextra")
+library(factoextra)
+@
+
+\bigskip
+Previo a la clusterización es necesario escalar los datos mediante la función \texttt{scale.}
+<<eval=TRUE>>=
+datosCJ<-scale(datosEvaluar)
+@
+
+\bigskip
+Por último, usando la función \texttt{hclust} se realiza dicha clusterización.
+<<eval=TRUE,results=hide>>=
+hCJ<-hclust(d = dist(x=datosCJ, method="euclidean"), method="complete")
+@
+
+\bigskip
+Para mostrar los resultados obtenidos se usa una función definida por nosotros y así poder pasar estos
+a un formato de foto. Es necesario indicar el número de clusters que queremos obtener.
+\begin{center}
+<<figura1, eval=TRUE,results=hide, fig=TRUE>>=
+fviz_dend(x=hCJ, k=2) 
+@
+\end{center}
+
+\bigskip
+Se puede \textbf{observar} que la clusterización de países se corresponde con la obtenida anteriormente mediante
+el uso de KMeans.
+
+\end{document}
